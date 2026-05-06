@@ -3,18 +3,18 @@
   "evals": [
     {
       "id": 1,
-      "prompt": "/compatibility-scan\n\nHere is the content of my analytics pipeline:\n\n```python\n# analytics/copilot_report.py\nimport requests\n\nGH_TOKEN = os.environ['GITHUB_TOKEN']\nORG = 'acme-corp'\n\ndef get_org_metrics(since, until):\n    url = f'https://api.github.com/orgs/{ORG}/copilot/metrics'\n    headers = {'Authorization': f'Bearer {GH_TOKEN}', 'X-GitHub-Api-Version': '2022-11-28'}\n    resp = requests.get(url, headers=headers, params={'since': since, 'until': until})\n    data = resp.json()\n    return [{\n        'date': row['day'],\n        'suggestions': row['total_suggestions_count'],\n        'accepted': row['total_lines_accepted'],\n        'chat_turns': row['chat_turns'],\n    } for row in data]\n\ndef get_team_metrics(team_slug):\n    url = f'https://api.github.com/orgs/{ORG}/teams/{team_slug}/copilot/metrics'\n    resp = requests.get(url, headers={'Authorization': f'Bearer {GH_TOKEN}'})\n    return resp.json()\n```",
-      "expected_output": "Produces a full compatibility scan report with: (1) Summary showing 1 file, 2 deprecated endpoint types, 3 call sites. (2) Findings section listing copilot_report.py with lines for get_org_metrics URL, get_team_metrics URL, and the field references. (3) Migration instructions for org-level and team-level endpoints including the teams→team path change. (4) Field checklist covering day→date, total_suggestions_count→total_code_suggestions, total_lines_accepted→loc_added_sum, chat_turns→user_initiated_interaction_count with semantic warning. (5) Next steps section.",
+      "prompt": "/compatibility-scan\n\nHere is the content of my analytics pipeline:\n\n```python\n# analytics/copilot_report.py\nimport os\nimport requests\n\nGH_TOKEN = os.environ['GITHUB_TOKEN']\nORG = 'acme-corp'\n\ndef get_org_metrics(since, until):\n    url = f'https://api.github.com/orgs/{ORG}/copilot/metrics'\n    headers = {'Authorization': f'Bearer {GH_TOKEN}', 'X-GitHub-Api-Version': '2022-11-28'}\n    resp = requests.get(url, headers=headers, params={'since': since, 'until': until})\n    data = resp.json()\n    return [{\n        'date': row['date'],\n        'active_users': row['total_active_users'],\n        'engaged_users': row['total_engaged_users'],\n        'suggestions': row['copilot_ide_code_completions']['editors'][0]['models'][0]['languages'][0]['total_code_suggestions']\n    } for row in data]\n\ndef get_team_metrics(team_slug):\n    url = f'https://api.github.com/orgs/{ORG}/team/{team_slug}/copilot/metrics'\n    resp = requests.get(url, headers={'Authorization': f'Bearer {GH_TOKEN}'})\n    return resp.json()\n```",
+      "expected_output": "Produces a compatibility report that flags both legacy endpoints and gives current report-endpoint migrations. Includes: (1) organization legacy endpoint migration to /orgs/{org}/copilot/metrics/reports/organization-1-day or /organization-28-day/latest, (2) explicit no-direct-replacement warning for team endpoint with workaround using users reports + team membership join, (3) parser/schema checklist for two-step download_links flow and legacy nested object replacement, (4) next steps section.",
       "files": [],
       "expectations": [
         "Output contains a '## Compatibility Scan Report' or similar summary section",
         "Output identifies the org-level /orgs/{org}/copilot/metrics endpoint",
-        "Output identifies the team-level /orgs/{org}/teams/{team}/copilot/metrics endpoint",
-        "Output notes the teams→team (plural to singular) path segment change for the team endpoint",
-        "Output includes field rename: day → date",
-        "Output includes field rename: total_suggestions_count → total_code_suggestions",
-        "Output includes field rename or warning for total_lines_accepted → loc_added_sum",
-        "Output includes semantic warning for chat_turns → user_initiated_interaction_count (numbers will differ)",
+        "Output identifies the team-level /orgs/{org}/team/{team_slug}/copilot/metrics endpoint",
+        "Output provides replacement using /orgs/{org}/copilot/metrics/reports/organization-1-day or /organization-28-day/latest",
+        "Output explicitly states there is no direct team-level report endpoint replacement",
+        "Output includes workaround guidance using users report endpoints and team membership join",
+        "Output includes two-step migration pattern: call report endpoint -> read download_links -> download JSON -> parse payload",
+        "Output includes schema migration note for legacy date and nested objects to current report payload fields",
         "Output includes a Next Steps or action items section",
         "Output includes the new API docs URL or migration guide URL"
       ]
@@ -22,13 +22,14 @@
     {
       "id": 2,
       "prompt": "/compatibility-scan\n\nScan my GitHub Actions workflow:\n\n```yaml\n# .github/workflows/copilot-metrics.yml\nname: Copilot Metrics Report\non:\n  schedule:\n    - cron: '0 9 * * 1'\njobs:\n  report:\n    runs-on: ubuntu-latest\n    steps:\n      - name: Fetch enterprise metrics\n        run: |\n          gh api \\\n            -H 'X-GitHub-Api-Version: 2022-11-28' \\\n            '/enterprises/my-enterprise/copilot/metrics?since=2026-01-01'\n      - name: Fetch user engagement\n        run: |\n          curl -H 'Authorization: Bearer ${{ secrets.GH_PAT }}' \\\n            'https://api.github.com/enterprises/my-enterprise/github/copilot/user_feature_engagement/metrics'\n```",
-      "expected_output": "Report identifies 2 call sites in the workflow file: (1) enterprise-level copilot/metrics API call and (2) the early-access user_feature_engagement API call. Migration instructions cover: (1) replace /copilot/metrics with /copilot/usage for enterprise endpoint, (2) note that user_feature_engagement has no exact replacement and explain the used_* boolean flags in the new user-level records as the closest equivalent.",
+      "expected_output": "Report identifies 2 call sites: enterprise legacy metrics endpoint and user_feature_engagement early-access API. Migration instructions should replace enterprise endpoint with report-link endpoints (/enterprises/{enterprise}/copilot/metrics/reports/enterprise-1-day or /enterprise-28-day/latest), and for user_feature_engagement recommend users report endpoints as closest replacement with used_* fields.",
       "files": [],
       "expectations": [
         "Output contains a summary section identifying 2 deprecated call sites",
         "Output flags the enterprise /copilot/metrics endpoint",
         "Output flags the user_feature_engagement early-access endpoint",
-        "Output provides the replacement enterprise endpoint: /enterprises/{enterprise}/copilot/usage",
+        "Output provides replacement enterprise report endpoint: /enterprises/{enterprise}/copilot/metrics/reports/enterprise-1-day or /enterprise-28-day/latest",
+        "Output includes the report-link download_links flow",
         "Output explains that user_feature_engagement has no exact replacement",
         "Output mentions used_chat, used_agent, or similar boolean fields as nearest equivalent",
         "Output includes severity labels indicating these are broken (sunset already passed)",
@@ -37,29 +38,31 @@
     },
     {
       "id": 3,
-      "prompt": "/compatibility-scan\n\n```typescript\n// src/dashboard/metrics.ts\nimport { Octokit } from '@octokit/rest';\n\nconst octokit = new Octokit({ auth: process.env.GITHUB_TOKEN });\n\nasync function fetchCopilotMetrics(org: string, since: string) {\n  const response = await octokit.request('GET /orgs/{org}/copilot/metrics', {\n    org,\n    since,\n    headers: { 'X-GitHub-Api-Version': '2022-11-28' },\n  });\n  return response.data.map(row => ({\n    date: row.day,\n    activUsers: row.total_active_users,\n    suggestions: row.total_suggestions_count,\n    linesAccepted: row.total_lines_accepted,\n  }));\n}\n```",
-      "expected_output": "Report identifies 1 file with 1 deprecated endpoint call and 3 deprecated field references. Migration instructions: replace /orgs/{org}/copilot/metrics with /orgs/{org}/copilot/usage in the Octokit request. Field checklist: day→date, total_suggestions_count→total_code_suggestions, total_lines_accepted→loc_added_sum (with warning about scope change). Provides a corrected TypeScript snippet showing the updated Octokit call and field mappings.",
+      "prompt": "/compatibility-scan\n\n```typescript\n// src/dashboard/metrics.ts\nimport { Octokit } from '@octokit/rest';\n\nconst octokit = new Octokit({ auth: process.env.GITHUB_TOKEN });\n\nasync function fetchCopilotMetrics(org: string, since: string) {\n  const response = await octokit.request('GET /orgs/{org}/copilot/metrics', {\n    org,\n    since,\n    headers: { 'X-GitHub-Api-Version': '2022-11-28' },\n  });\n  return response.data;\n}\n\nasync function fetchCurrentUsageReports(org: string) {\n  return octokit.request('GET /orgs/{org}/copilot/metrics/reports/organization-28-day/latest', {\n    org,\n    headers: { 'X-GitHub-Api-Version': '2026-03-10' },\n  });\n}\n```",
+      "expected_output": "Report identifies one legacy endpoint and one current report endpoint. It should flag the legacy call as broken and classify the /reports endpoint as current (not deprecated). Migration instructions should only target the legacy call.",
       "files": [],
       "expectations": [
         "Output contains a summary section",
         "Output identifies the org-level copilot/metrics call in the Octokit request",
-        "Output provides corrected endpoint: /orgs/{org}/copilot/usage",
-        "Output includes field rename: day → date",
-        "Output includes field rename: total_suggestions_count → total_code_suggestions",
-        "Output includes field rename: total_lines_accepted → loc_added_sum with a warning that numbers will differ",
+        "Output identifies /orgs/{org}/copilot/metrics/reports/organization-28-day/latest as current usage report endpoint",
+        "Output does NOT flag the /reports endpoint as deprecated",
+        "Output provides corrected legacy replacement endpoint under /copilot/metrics/reports/",
+        "Output includes two-step report download_links flow",
         "Output provides a code snippet showing the corrected TypeScript or Octokit call",
         "Output includes Next Steps or action items"
       ]
     },
     {
       "id": 4,
-      "prompt": "/compatibility-scan src/utils/formatter.ts\n\n```typescript\n// src/utils/formatter.ts\nexport function formatDate(date: string): string {\n  return new Date(date).toLocaleDateString('en-US');\n}\n\nexport function formatCount(n: number): string {\n  return n.toLocaleString();\n}\n```",
-      "expected_output": "Report confirms 0 deprecated API calls found. Clean confirmation that no migration is needed for this file.",
+      "prompt": "/compatibility-scan\n\n```yaml\n# .github/workflows/current-copilot-usage.yml\njobs:\n  report:\n    steps:\n      - name: Get org report links\n        run: |\n          gh api \\\n            -H 'X-GitHub-Api-Version: 2026-03-10' \\\n            '/orgs/my-org/copilot/metrics/reports/organization-28-day/latest'\n```",
+      "expected_output": "Report should confirm no legacy findings and classify this as current usage report endpoint usage. It should explicitly avoid marking /copilot/metrics/reports paths as deprecated.",
       "files": [],
       "expectations": [
-        "Output confirms no deprecated API calls were found",
+        "Output confirms no legacy API calls were found",
+        "Output acknowledges current usage report call sites were found",
+        "Output states /copilot/metrics/reports endpoint is current and should not be migrated",
         "Output does NOT fabricate any findings",
-        "Output does NOT produce a findings table with rows",
+        "Output does NOT suggest replacing /copilot/metrics/reports with another endpoint",
         "Output states the codebase or file appears compatible"
       ]
     }
