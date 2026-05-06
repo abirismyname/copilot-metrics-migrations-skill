@@ -1,0 +1,600 @@
+openapi: 3.1.0
+info:
+  title: GitHub Copilot Metrics API (Legacy)
+  version: 2026-03-10
+  summary: Reverse-engineered OpenAPI description for GitHub's legacy Copilot Metrics REST endpoints.
+  description: |
+    Reverse-engineered from GitHub Enterprise Cloud REST API documentation for Copilot Metrics.
+
+    WARNING: GitHub's documentation states that these Copilot metrics endpoints were closed down on April 2, 2026.
+    Use the Copilot usage metrics endpoints instead for current integrations.
+
+    Metrics include aggregated Copilot usage for up to the last 100 days. Metrics are processed once per day
+    for the previous day and only include data up until yesterday. End users must have telemetry enabled in
+    their IDE to be counted in these metrics.
+
+    If you access GitHub at GHE.com, replace api.github.com with your enterprise's dedicated subdomain,
+    for example api.SUBDOMAIN.ghe.com.
+  x-docs-url: https://docs.github.com/en/enterprise-cloud@latest/rest/copilot/copilot-metrics?apiVersion=2026-03-10
+servers:
+  - url: https://api.github.com
+    description: GitHub.com REST API
+  - url: https://api.{subdomain}.ghe.com
+    description: GitHub Enterprise Cloud with data residency / dedicated subdomain
+    variables:
+      subdomain:
+        default: SUBDOMAIN
+        description: Enterprise dedicated subdomain.
+security:
+  - bearerAuth: []
+tags:
+  - name: Copilot metrics
+    description: Legacy REST endpoints for aggregated GitHub Copilot metrics.
+paths:
+  /enterprises/{enterprise}/copilot/metrics:
+    get:
+      tags: [Copilot metrics]
+      operationId: getCopilotMetricsForEnterprise
+      summary: Get Copilot metrics for an enterprise
+      description: |
+        Use this endpoint to see a breakdown of aggregated metrics for various GitHub Copilot features.
+
+        Access requires the Copilot Metrics API access policy to be enabled or set to "no policy" for the enterprise.
+        Only enterprise owners and billing managers can view Copilot metrics for the enterprise.
+
+        OAuth app tokens and personal access tokens (classic) need either the `manage_billing:copilot` or
+        `read:enterprise` scope. This endpoint does not work with GitHub App user access tokens, GitHub App
+        installation access tokens, or fine-grained personal access tokens.
+      parameters:
+        - $ref: '#/components/parameters/Accept'
+        - $ref: '#/components/parameters/GitHubApiVersion'
+        - $ref: '#/components/parameters/Enterprise'
+        - $ref: '#/components/parameters/Since'
+        - $ref: '#/components/parameters/Until'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PerPageDays'
+      responses:
+        '200':
+          $ref: '#/components/responses/CopilotMetricsResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/CopilotMetricsDisabled'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /enterprises/{enterprise}/team/{team_slug}/copilot/metrics:
+    get:
+      tags: [Copilot metrics]
+      operationId: getCopilotMetricsForEnterpriseTeam
+      summary: Get Copilot metrics for an enterprise team
+      description: |
+        Use this endpoint to see a breakdown of aggregated metrics for various GitHub Copilot features.
+
+        This endpoint is only applicable to dedicated enterprise accounts for Copilot Business. It will only return
+        results for a given day if the enterprise team had five or more members with active Copilot licenses on that
+        day, as evaluated at the end of that day.
+
+        Access requires the Copilot Metrics API access policy to be enabled or set to "no policy" for the enterprise.
+        Only owners and billing managers for the enterprise containing the enterprise team can view metrics.
+
+        OAuth app tokens and personal access tokens (classic) need either the `manage_billing:copilot` or
+        `read:enterprise` scope. This endpoint does not work with GitHub App user access tokens, GitHub App
+        installation access tokens, or fine-grained personal access tokens.
+      parameters:
+        - $ref: '#/components/parameters/Accept'
+        - $ref: '#/components/parameters/GitHubApiVersion'
+        - $ref: '#/components/parameters/Enterprise'
+        - $ref: '#/components/parameters/EnterpriseTeamSlug'
+        - $ref: '#/components/parameters/Since'
+        - $ref: '#/components/parameters/Until'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PerPageDays'
+      responses:
+        '200':
+          $ref: '#/components/responses/CopilotMetricsResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/CopilotMetricsDisabled'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /orgs/{org}/copilot/metrics:
+    get:
+      tags: [Copilot metrics]
+      operationId: getCopilotMetricsForOrganization
+      summary: Get Copilot metrics for an organization
+      description: |
+        Use this endpoint to see a breakdown of aggregated metrics for various GitHub Copilot features.
+
+        This endpoint will only return results for a given day if the organization contained five or more members
+        with active Copilot licenses on that day, as evaluated at the end of that day.
+
+        Access requires the Copilot Metrics API access policy to be enabled for the organization. Only organization
+        owners and owners and billing managers of the parent enterprise can view Copilot metrics.
+
+        OAuth app tokens and personal access tokens (classic) need either the `manage_billing:copilot`, `read:org`,
+        or `read:enterprise` scope. Fine-grained token support includes GitHub App user access tokens, GitHub App
+        installation access tokens, and fine-grained PATs with at least one of: "GitHub Copilot Business" organization
+        permissions (read), or "Administration" organization permissions (read).
+      parameters:
+        - $ref: '#/components/parameters/Accept'
+        - $ref: '#/components/parameters/GitHubApiVersion'
+        - $ref: '#/components/parameters/Org'
+        - $ref: '#/components/parameters/Since'
+        - $ref: '#/components/parameters/Until'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PerPageDays'
+      responses:
+        '200':
+          $ref: '#/components/responses/CopilotMetricsResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/CopilotMetricsDisabled'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /orgs/{org}/team/{team_slug}/copilot/metrics:
+    get:
+      tags: [Copilot metrics]
+      operationId: getCopilotMetricsForTeam
+      summary: Get Copilot metrics for a team
+      description: |
+        Use this endpoint to see a breakdown of aggregated metrics for various GitHub Copilot features.
+
+        This endpoint will only return results for a given day if the team had five or more members with active
+        Copilot licenses on that day, as evaluated at the end of that day.
+
+        Access requires the Copilot Metrics API access policy to be enabled for the organization containing the team.
+        Only organization owners for the organization containing the team and owners and billing managers of the
+        parent enterprise can view metrics.
+
+        OAuth app tokens and personal access tokens (classic) need either the `manage_billing:copilot`, `read:org`,
+        or `read:enterprise` scope. Fine-grained token support includes GitHub App user access tokens, GitHub App
+        installation access tokens, and fine-grained PATs with at least one of: "GitHub Copilot Business" organization
+        permissions (read), or "Administration" organization permissions (read).
+      parameters:
+        - $ref: '#/components/parameters/Accept'
+        - $ref: '#/components/parameters/GitHubApiVersion'
+        - $ref: '#/components/parameters/Org'
+        - $ref: '#/components/parameters/OrgTeamSlug'
+        - $ref: '#/components/parameters/Since'
+        - $ref: '#/components/parameters/Until'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PerPageDays'
+      responses:
+        '200':
+          $ref: '#/components/responses/CopilotMetricsResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/CopilotMetricsDisabled'
+        '500':
+          $ref: '#/components/responses/InternalError'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: token
+      description: GitHub token. Supported token types and required scopes/permissions vary by endpoint.
+  parameters:
+    Accept:
+      name: Accept
+      in: header
+      required: false
+      description: Setting to `application/vnd.github+json` is recommended.
+      schema:
+        type: string
+        default: application/vnd.github+json
+    GitHubApiVersion:
+      name: X-GitHub-Api-Version
+      in: header
+      required: false
+      description: GitHub REST API version.
+      schema:
+        type: string
+        default: '2026-03-10'
+    Enterprise:
+      name: enterprise
+      in: path
+      required: true
+      description: The slug version of the enterprise name.
+      schema:
+        type: string
+    Org:
+      name: org
+      in: path
+      required: true
+      description: The organization name. The name is not case sensitive.
+      schema:
+        type: string
+    EnterpriseTeamSlug:
+      name: team_slug
+      in: path
+      required: true
+      description: The slug of the enterprise team name.
+      schema:
+        type: string
+    OrgTeamSlug:
+      name: team_slug
+      in: path
+      required: true
+      description: The slug of the team name.
+      schema:
+        type: string
+    Since:
+      name: since
+      in: query
+      required: false
+      description: Show usage metrics since this date. Timestamp in ISO 8601 format (`YYYY-MM-DDTHH:MM:SSZ`). Maximum value is 100 days ago.
+      schema:
+        type: string
+        format: date-time
+    Until:
+      name: until
+      in: query
+      required: false
+      description: Show usage metrics until this date. Timestamp in ISO 8601 format (`YYYY-MM-DDTHH:MM:SSZ`) and should not precede `since` if passed.
+      schema:
+        type: string
+        format: date-time
+    Page:
+      name: page
+      in: query
+      required: false
+      description: Page number of the results to fetch.
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+    PerPageDays:
+      name: per_page
+      in: query
+      required: false
+      description: Number of days of metrics to display per page. Maximum 100.
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 100
+  responses:
+    CopilotMetricsResponse:
+      description: OK
+      headers:
+        Link:
+          description: Pagination links, when applicable.
+          schema:
+            type: string
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/CopilotMetricsDay'
+          examples:
+            example:
+              summary: Example daily metrics payload
+              value:
+                - date: '2024-06-24'
+                  total_active_users: 24
+                  total_engaged_users: 20
+                  copilot_ide_code_completions:
+                    total_engaged_users: 20
+                    languages:
+                      - name: python
+                        total_engaged_users: 10
+                      - name: ruby
+                        total_engaged_users: 10
+                    editors:
+                      - name: vscode
+                        total_engaged_users: 13
+                        models:
+                          - name: default
+                            is_custom_model: false
+                            custom_model_training_date: null
+                            total_engaged_users: 13
+                            languages:
+                              - name: python
+                                total_engaged_users: 6
+                                total_code_suggestions: 249
+                                total_code_acceptances: 123
+                                total_code_lines_suggested: 225
+                                total_code_lines_accepted: 135
+                  copilot_ide_chat:
+                    total_engaged_users: 13
+                    editors:
+                      - name: vscode
+                        total_engaged_users: 13
+                        models:
+                          - name: default
+                            is_custom_model: false
+                            custom_model_training_date: null
+                            total_engaged_users: 12
+                            total_chats: 45
+                            total_chat_insertion_events: 12
+                            total_chat_copy_events: 16
+                  copilot_dotcom_chat:
+                    total_engaged_users: 14
+                    models:
+                      - name: default
+                        is_custom_model: false
+                        custom_model_training_date: null
+                        total_engaged_users: 14
+                        total_chats: 38
+                  copilot_dotcom_pull_requests:
+                    total_engaged_users: 12
+                    repositories:
+                      - name: demo/repo1
+                        total_engaged_users: 8
+                        models:
+                          - name: default
+                            is_custom_model: false
+                            custom_model_training_date: null
+                            total_pr_summaries_created: 6
+                            total_engaged_users: 8
+    Forbidden:
+      description: Forbidden
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/BasicError'
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/BasicError'
+    CopilotMetricsDisabled:
+      description: Copilot Usage Metrics API setting is disabled at the organization or enterprise level.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ValidationError'
+    InternalError:
+      description: Internal Error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/BasicError'
+  schemas:
+    CopilotMetricsDay:
+      type: object
+      description: Aggregated Copilot metrics for one day.
+      additionalProperties: true
+      properties:
+        date:
+          type: string
+          format: date
+          description: Date for the metrics, in `YYYY-MM-DD` format.
+        total_active_users:
+          type: integer
+          minimum: 0
+          description: Total number of Copilot active users for the day.
+        total_engaged_users:
+          type: integer
+          minimum: 0
+          description: Total number of Copilot engaged users for the day.
+        copilot_ide_code_completions:
+          $ref: '#/components/schemas/IdeCodeCompletionsMetrics'
+        copilot_ide_chat:
+          $ref: '#/components/schemas/IdeChatMetrics'
+        copilot_dotcom_chat:
+          $ref: '#/components/schemas/DotcomChatMetrics'
+        copilot_dotcom_pull_requests:
+          $ref: '#/components/schemas/DotcomPullRequestMetrics'
+      required:
+        - date
+        - total_active_users
+        - total_engaged_users
+    IdeCodeCompletionsMetrics:
+      type: object
+      additionalProperties: true
+      properties:
+        total_engaged_users:
+          type: integer
+          minimum: 0
+        languages:
+          type: array
+          items:
+            $ref: '#/components/schemas/LanguageEngagement'
+        editors:
+          type: array
+          items:
+            $ref: '#/components/schemas/CodeCompletionEditorMetrics'
+    LanguageEngagement:
+      type: object
+      additionalProperties: true
+      properties:
+        name:
+          type: string
+        total_engaged_users:
+          type: integer
+          minimum: 0
+    CodeCompletionEditorMetrics:
+      type: object
+      additionalProperties: true
+      properties:
+        name:
+          type: string
+        total_engaged_users:
+          type: integer
+          minimum: 0
+        models:
+          type: array
+          items:
+            $ref: '#/components/schemas/CodeCompletionModelMetrics'
+    BaseModelMetrics:
+      type: object
+      additionalProperties: true
+      properties:
+        name:
+          type: string
+          description: Model name, for example `default` or a custom model name.
+        is_custom_model:
+          type: boolean
+        custom_model_training_date:
+          type:
+            - string
+            - 'null'
+          format: date
+          description: Training date for a custom model, or null for non-custom/default models.
+        total_engaged_users:
+          type: integer
+          minimum: 0
+    CodeCompletionModelMetrics:
+      allOf:
+        - $ref: '#/components/schemas/BaseModelMetrics'
+        - type: object
+          additionalProperties: true
+          properties:
+            languages:
+              type: array
+              items:
+                $ref: '#/components/schemas/CodeCompletionLanguageMetrics'
+    CodeCompletionLanguageMetrics:
+      type: object
+      additionalProperties: true
+      properties:
+        name:
+          type: string
+        total_engaged_users:
+          type: integer
+          minimum: 0
+        total_code_suggestions:
+          type: integer
+          minimum: 0
+        total_code_acceptances:
+          type: integer
+          minimum: 0
+        total_code_lines_suggested:
+          type: integer
+          minimum: 0
+        total_code_lines_accepted:
+          type: integer
+          minimum: 0
+    IdeChatMetrics:
+      type: object
+      additionalProperties: true
+      properties:
+        total_engaged_users:
+          type: integer
+          minimum: 0
+        editors:
+          type: array
+          items:
+            $ref: '#/components/schemas/IdeChatEditorMetrics'
+    IdeChatEditorMetrics:
+      type: object
+      additionalProperties: true
+      properties:
+        name:
+          type: string
+        total_engaged_users:
+          type: integer
+          minimum: 0
+        models:
+          type: array
+          items:
+            $ref: '#/components/schemas/IdeChatModelMetrics'
+    IdeChatModelMetrics:
+      allOf:
+        - $ref: '#/components/schemas/BaseModelMetrics'
+        - type: object
+          additionalProperties: true
+          properties:
+            total_chats:
+              type: integer
+              minimum: 0
+            total_chat_insertion_events:
+              type: integer
+              minimum: 0
+            total_chat_copy_events:
+              type: integer
+              minimum: 0
+    DotcomChatMetrics:
+      type: object
+      additionalProperties: true
+      properties:
+        total_engaged_users:
+          type: integer
+          minimum: 0
+        models:
+          type: array
+          items:
+            $ref: '#/components/schemas/DotcomChatModelMetrics'
+    DotcomChatModelMetrics:
+      allOf:
+        - $ref: '#/components/schemas/BaseModelMetrics'
+        - type: object
+          additionalProperties: true
+          properties:
+            total_chats:
+              type: integer
+              minimum: 0
+    DotcomPullRequestMetrics:
+      type: object
+      additionalProperties: true
+      properties:
+        total_engaged_users:
+          type: integer
+          minimum: 0
+        repositories:
+          type: array
+          items:
+            $ref: '#/components/schemas/PullRequestRepositoryMetrics'
+    PullRequestRepositoryMetrics:
+      type: object
+      additionalProperties: true
+      properties:
+        name:
+          type: string
+          description: Repository full name, for example `owner/repo`.
+        total_engaged_users:
+          type: integer
+          minimum: 0
+        models:
+          type: array
+          items:
+            $ref: '#/components/schemas/PullRequestModelMetrics'
+    PullRequestModelMetrics:
+      allOf:
+        - $ref: '#/components/schemas/BaseModelMetrics'
+        - type: object
+          additionalProperties: true
+          properties:
+            total_pr_summaries_created:
+              type: integer
+              minimum: 0
+    BasicError:
+      type: object
+      additionalProperties: true
+      properties:
+        message:
+          type: string
+        documentation_url:
+          type: string
+          format: uri
+        status:
+          type: string
+    ValidationError:
+      type: object
+      additionalProperties: true
+      properties:
+        message:
+          type: string
+        errors:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        documentation_url:
+          type: string
+          format: uri
